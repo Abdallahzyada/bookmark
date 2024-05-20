@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from actions.utils import create_action
+from actions.utils import Action
 
 def user_login(request):
     if request.method == 'POST':
@@ -35,9 +36,15 @@ def user_login(request):
 
 @login_required
 def dashboard(request):
+    actions = Action.objects.exclude(user=request.user)
+    following_ids = request.user.following.values_list('id', flat=True)
+    if following_ids:
+        actions = actions.filter(user_id__in=following_ids)
+        actions = actions[:10]
     return render(request,
                   'account/dashboard.html',
-                  {'section': 'dashboard'})
+                  {'section': 'dashboard',
+                   'actions':actions})
 
 
 def register(request):
@@ -130,3 +137,4 @@ def user_follow(request):
             return JsonResponse({"status":'error'})
         
     return JsonResponse({"status":'error'})
+
